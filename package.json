@@ -2,26 +2,58 @@
   "name": "vsc-presence-plugin",
   "displayName": "vsc-presence-plugin",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "engines": {
     "vscode": "^1.77.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "vsc-presence-plugin.helloWorld",
-        "title": "Hello World"
+        "command": "vsc-presence-plugin.startMonitoring",
+        "title": "VSP: Notice Presence"
       },
       {
-        "command": "vsc-presence-plugin.startMonitoring",
-        "title": "Notice Presence"
+        "command": "vsc-presence-plugin.setPublisherkey",
+        "title": "VSP: Set Publisher Key"
+      },
+      {
+        "command": "vsc-presence-plugin.getFetchkey",
+        "title": "VSP: Request Fetch Key"
+      },
+      {
+        "command": "vsc-presence-plugin.connectServer",
+        "title": "VSP: Connect to Server"
+      },
+      {
+        "command": "vsc-presence-plugin.setAutoStart",
+        "title": "VSP: Set Auto Start"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "VS Presence Plugin",
+      "order": 0,
+      "properties": {
+        "vsPresence.PublisherKey": {
+          "markdownDescription": "The Publisher Key for the Presence Gateway API",
+          "type": "string",
+          "order": 0,
+          "default": ""
+        },
+        "vsPresence.AutoStart": {
+          "markdownDescription": "Automatically start monitoring when VS Code starts",
+          "type": "boolean",
+          "order": 1,
+          "default": false
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",
@@ -35,6 +67,7 @@
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
+    "@types/node-fetch": "^2.6.3",
     "@types/vscode": "^1.77.0",
     "@types/ws": "^8.5.4",
     "@typescript-eslint/eslint-plugin": "^5.56.0",
@@ -46,6 +79,7 @@
     "typescript": "^4.9.5"
   },
   "dependencies": {
+    "node-fetch": "2",
     "ws": "^8.13.0"
   }
 }
