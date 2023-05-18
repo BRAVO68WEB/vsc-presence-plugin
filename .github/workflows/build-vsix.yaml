@@ -18,3 +18,12 @@ jobs:
         with:
           name: vsc-presence-plugin.vsix
           path: out/vsc-presence-plugin.vsix
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Latest Release
+          body: |
+            This is the latest release of the VSC Presence Plugin
+          prerelease: true
+          files: |
+            out/vsc-presence-plugin.vsix
