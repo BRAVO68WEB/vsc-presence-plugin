@@ -1,0 +1,20 @@
+name: Build Vscode Extension
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-ext:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - run: npm install
+      - run: npm run vscode:build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: vsc-presence-plugin.vsix
+          path: out/vsc-presence-plugin.vsix

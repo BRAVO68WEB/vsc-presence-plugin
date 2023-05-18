@@ -3,8 +3,8 @@ import * as WebSocket from 'ws';
 import * as config from './config';
 import * as fetch from 'node-fetch';
 
-function getPresence (editor: vscode.TextEditor, ws: { send: (arg0: string) => void; }) {
-	if(!config.get('PublisherKey')) {
+function getPresence(editor: vscode.TextEditor, ws: { send: (arg0: string) => void; }) {
+	if (!config.get('PublisherKey')) {
 		vscode.window.showErrorMessage('Please set your publisher key first');
 		return;
 	}
@@ -31,6 +31,7 @@ function getPresence (editor: vscode.TextEditor, ws: { send: (arg0: string) => v
 		console.log(presence, text);
 
 		const message = JSON.stringify({
+			msgType: 'presence',
 			presence, pubkey: config.get('PublisherKey')
 		});
 		ws.send(message);
@@ -39,28 +40,36 @@ function getPresence (editor: vscode.TextEditor, ws: { send: (arg0: string) => v
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	console.log('Congratulations, your extension "vsc-presence-plugin" is now active!');
-	
-	let ws = new WebSocket('ws://localhost:3000');
+	const WS_URL = 'ws://localhost:3000';
+	const REST_URL = 'http://localhost:3000';
+
+	let ws = new WebSocket(WS_URL);
 
 	ws.on('close', () => {
 		// Reconnect every 5 seconds
 		console.log('Disconnected from WebSocket server');
 		setTimeout(() => {
-			ws = new WebSocket('ws://localhost:3000');
+			ws = new WebSocket(WS_URL);
 			ws.on('open', () => {
 				console.log('Reconnected to WebSocket server');
+				setInterval(() => {
+					ws.send(JSON.stringify({
+						msgType: 'heartbeat',
+						pubkey: config.get('PublisherKey')
+					}));
+					console.log('Sent heartbeat to server');
+				}, 9000);
 			});
 		}
-		, 5000);
+			, 5000);
 	});
 
-	if(!config.get('PublisherKey')) {
+	if (!config.get('PublisherKey')) {
 		vscode.window.showErrorMessage('Please set your publisher key first');
 		return;
 	}
 
-	if(!config.get('AutoStart')) {
+	if (!config.get('AutoStart')) {
 		vscode.window.showInformationMessage('AutoStart is disabled. Please use the command "Start Monitoring" to start monitoring for presence.');
 		return;
 	} else {
@@ -68,55 +77,72 @@ export function activate(context: vscode.ExtensionContext) {
 
 		ws.on('open', () => {
 			console.log('Connected to WebSocket server');
+			setInterval(() => {
+				ws.send(JSON.stringify({
+					msgType: 'heartbeat',
+					pubkey: config.get('PublisherKey')
+				}));
+				console.log('Sent heartbeat to server');
+			}, 9000);
 
 			const editor = vscode.window.activeTextEditor;
-			if(editor)
-			{
+			if (editor) {
 				getPresence(editor, ws);
 				console.log('Sent initial presence to server');
 			}
 			vscode.window.onDidChangeActiveTextEditor((editor) => {
-				if(editor)
-				{
+				if (editor) {
 					getPresence(editor, ws);
 				}
 			});
-		});		
+		});
 	}
 
-	let disposable = vscode.commands.registerCommand('vsc-presence-plugin.connectServer', () => {
-		ws = new WebSocket('ws://localhost:3000');
+	let connectServer = vscode.commands.registerCommand('vsc-presence-plugin.connectServer', () => {
+		ws = new WebSocket(WS_URL);
 		ws.on('open', () => {
 			console.log('Reconnected to WebSocket server');
+			setInterval(() => {
+				ws.send(JSON.stringify({
+					msgType: 'heartbeat',
+					pubkey: config.get('PublisherKey')
+				}));
+				console.log('Sent heartbeat to server');
+			}, 9000);
 		});
 	});
 
-	let disposable2 = vscode.commands.registerCommand('vsc-presence-plugin.startMonitoring', () => {
+	let startMonitoring = vscode.commands.registerCommand('vsc-presence-plugin.startMonitoring', () => {
 		vscode.window.showInformationMessage('Monitoring for Presence!');
-		
+
 		ws.on('open', () => {
 			console.log('Connected to WebSocket server');
+			setInterval(() => {
+				ws.send(JSON.stringify({
+					msgType: 'heartbeat',
+					pubkey: config.get('PublisherKey')
+				}));
+				console.log('Sent heartbeat to server');
+			}, 9000);
 		});
 
 		const editor = vscode.window.activeTextEditor;
-		if(!config.get('PublisherKey')) {
+		if (!config.get('PublisherKey')) {
 			vscode.window.showErrorMessage('Please set your publisher key first');
 			return;
 		}
-		if(editor)
-		{
+		if (editor) {
 			getPresence(editor, ws);
 			console.log('Sent initial presence to server');
 		}
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
-			if(editor)
-			{
+			if (editor) {
 				getPresence(editor, ws);
 			}
 		});
 	});
 
-	let disposable3 = vscode.commands.registerCommand('vsc-presence-plugin.setPublisherkey', () => {
+	let setPublisherkey = vscode.commands.registerCommand('vsc-presence-plugin.setPublisherkey', () => {
 		vscode.window.showInputBox({
 			prompt: 'Enter your publisher key',
 			placeHolder: 'Publisher key',
@@ -129,21 +155,26 @@ export function activate(context: vscode.ExtensionContext) {
 		});
 	});
 
-	let disposable4 = vscode.commands.registerCommand('vsc-presence-plugin.getFetchkey', async () => {
-		const pubkey : any = config.get('PublisherKey');
-		const fKey : any = await fetch.default(`http://localhost:3000/fetchkey/${pubkey}`).then((res) => {
+	let getFetchkey = vscode.commands.registerCommand('vsc-presence-plugin.getFetchkey', async () => {
+		const pubkey: any = config.get('PublisherKey');
+		const fKey: any = await fetch.default(`${REST_URL}/fetchkey/${pubkey}`).then((res) => {
 			return res.json();
 		});
-		console.log(fKey);
 		vscode.window.showInformationMessage(fKey.data.toString());
 	});
 
-	let disposable5 = vscode.commands.registerCommand('vsc-presence-plugin.setAutoStart', () => {
+	let setAutoStart = vscode.commands.registerCommand('vsc-presence-plugin.setAutoStart', () => {
 		vscode.window.showInformationMessage('Auto start is now enabled');
 		config.update('AutoStart', true);
 	});;
 
-	context.subscriptions.push(disposable, disposable2, disposable3, disposable4, disposable5);
+	context.subscriptions.push(
+		connectServer,
+		startMonitoring,
+		setPublisherkey,
+		getFetchkey,
+		setAutoStart
+	);
 }
 
 export function deactivate() {
